@@ -132,8 +132,39 @@ with tab_products:
             "(Chase, Amex, Citi, Bank of America, Capital One, Wells Fargo, Discover) "
             "into `data/card_product_comparison.csv`. A template is provided in the repo."
         )
-    else:
+    elif "category" not in product_df.columns:
+        # Older flat-list format (no category column) - just show as-is
         st.dataframe(product_df, use_container_width=True)
+    else:
+        all_categories = sorted(product_df["category"].unique().tolist())
+        all_issuers = sorted(product_df["issuer"].unique().tolist())
+
+        filter_col1, filter_col2 = st.columns(2)
+        with filter_col1:
+            selected_categories = st.multiselect(
+                "Card category",
+                options=all_categories,
+                default=all_categories,  # nothing excluded until the user narrows it
+            )
+        with filter_col2:
+            selected_issuers = st.multiselect(
+                "Bank / issuer",
+                options=all_issuers,
+                default=all_issuers,
+            )
+
+        # If someone clears a filter entirely, treat that as "show everything"
+        # rather than showing zero rows - avoids a confusing blank table.
+        active_categories = selected_categories if selected_categories else all_categories
+        active_issuers = selected_issuers if selected_issuers else all_issuers
+
+        filtered_df = product_df[
+            product_df["category"].isin(active_categories)
+            & product_df["issuer"].isin(active_issuers)
+        ]
+
+        st.caption(f"Showing {len(filtered_df)} of {len(product_df)} cards")
+        st.dataframe(filtered_df, use_container_width=True, hide_index=True)
 
 # ---------- Tab 4: Methodology ----------
 with tab_about:
