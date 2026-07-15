@@ -1,0 +1,29 @@
+issuer,metric,period_end,value,form,fy,fp,frame
+American Express,total_revenue,2010-12-31,27819000000,10-K,2010.0,FY,CY2010
+Wells Fargo,total_revenue,2020-09-30,54415000000,10-Q,2020.0,Q3,
+Discover Financial,total_revenue,2025-03-31,4801000000,10-Q,2025.0,Q1,CY2025Q1
+Discover Financial,stockholders_equity,2025-03-31,18963000000,10-Q,2025.0,Q1,CY2025Q1I
+Discover Financial,total_assets,2025-03-31,147914000000,10-Q,2025.0,Q1,CY2025Q1I
+Discover Financial,net_income,2025-03-31,1104000000,10-Q,2025.0,Q1,CY2025Q1
+Citigroup,net_income,2025-12-31,14306000000,10-K,2025.0,FY,CY2025
+Citigroup,stockholders_equity,2025-12-31,212291000000,10-K,2025.0,FY,CY2025Q4I
+Citigroup,total_revenue,2025-12-31,85225000000,10-K,2025.0,FY,CY2025
+JPMorgan Chase,total_revenue,2025-12-31,182447000000,10-K,2025.0,FY,CY2025
+Citigroup,total_assets,2025-12-31,2657202000000,10-K,2025.0,FY,CY2025Q4I
+JPMorgan Chase,net_income,2026-03-31,16494000000,10-Q,2026.0,Q1,CY2026Q1
+Wells Fargo,total_assets,2026-03-31,2205752000000,10-Q,2026.0,Q1,CY2026Q1I
+Wells Fargo,net_income,2026-03-31,5253000000,10-Q,2026.0,Q1,CY2026Q1
+Bank of America,total_assets,2026-03-31,3496186000000,10-Q,2026.0,Q1,CY2026Q1I
+Capital One,total_assets,2026-03-31,682905000000,10-Q,2026.0,Q1,CY2026Q1I
+JPMorgan Chase,total_assets,2026-03-31,4900475000000,10-Q,2026.0,Q1,CY2026Q1I
+Capital One,total_revenue,2026-03-31,15231000000,10-Q,2026.0,Q1,CY2026Q1
+JPMorgan Chase,stockholders_equity,2026-03-31,364038000000,10-Q,2026.0,Q1,CY2026Q1I
+Bank of America,stockholders_equity,2026-03-31,300668000000,10-Q,2026.0,Q1,CY2026Q1I
+American Express,total_assets,2026-03-31,308894000000,10-Q,2026.0,Q1,CY2026Q1I
+American Express,stockholders_equity,2026-03-31,33995000000,10-Q,2026.0,Q1,CY2026Q1I
+Capital One,net_income,2026-03-31,2174000000,10-Q,2026.0,Q1,CY2026Q1
+Bank of America,net_income,2026-03-31,8584000000,10-Q,2026.0,Q1,CY2026Q1
+Wells Fargo,stockholders_equity,2026-03-31,178396000000,10-Q,2026.0,Q1,CY2026Q1I
+Bank of America,total_revenue,2026-03-31,30272000000,10-Q,2026.0,Q1,CY2026Q1
+Capital One,stockholders_equity,2026-03-31,112261000000,10-Q,2026.0,Q1,CY2026Q1I
+American Express,net_income,2026-03-31,2971000000,10-Q,2026.0,Q1,CY2026Q1
