@@ -1,0 +1,15 @@
+# Secrets - never commit real API keys
+.streamlit/secrets.toml
+
+# Fetched data (regenerate via scripts, don't commit large/refreshable CSVs)
+data/*.csv
+!data/card_product_comparison_template.csv
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
