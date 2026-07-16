@@ -1,208 +1,101 @@
 """
-US Credit Card Market Dashboard
-Built entirely on public data: FRED, SEC EDGAR, and issuer-published rate/fee pages.
+Pulls macroeconomic and consumer-credit indicators from FRED (Federal Reserve
+Economic Data) — all public, free data, no vendor licensing required.
+
+Requires a free FRED API key: https://fred.stlouisfed.org/docs/api/api_key.html
+Looked up in two places, in this order:
+  1. The FRED_API_KEY environment variable
+  2. .streamlit/secrets.toml (the same file Streamlit itself uses)
+So you only need to set your key in ONE place - either works.
 """
 
 import os
+import sys
 import pandas as pd
-import plotly.express as px
-import streamlit as st
+from fredapi import Fred
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+# ---- Series we care about for the credit card market report ----
+# Each maps to a FRED series ID. Comment describes what it feeds in the app.
+SERIES = {
+    "real_gdp": "GDPC1",                # Real GDP, $B -> Market Overview
+    "unemployment_rate": "UNRATE",       # Unemployment rate, % -> Market Overview
+    "cpi": "CPIAUCSL",                   # Consumer Price Index -> Market Overview
+    "real_median_household_income": "MEHOINUSA672N",  # $ -> Customer Profiles
+    "revolving_consumer_credit": "REVOLSL",   # $B, mostly credit card debt -> Market Value
+    "credit_card_delinquency_rate": "DRCCLACBS",  # % -> Market Risk
+    "credit_card_utilization_rate": "RCCCBACTIVEUTILPCT50",  # Median % of credit line used, active accounts -> Market Overview
+    "personal_savings_rate": "PSAVERT",  # % -> Macro context
+}
 
-st.set_page_config(
-    page_title="US Credit Card Market Dashboard",
-    page_icon="\U0001F4B3",
-    layout="wide",
-)
-
-# ---------- Helpers ----------
-
-@st.cache_data(ttl=3600)
-def load_csv(filename):
-    path = os.path.join(DATA_DIR, filename)
-    if not os.path.exists(path):
-        return None
-    return pd.read_csv(path, parse_dates=["date"] if "date" in pd.read_csv(path, nrows=0).columns else None)
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+SECRETS_PATH = os.path.join(os.path.dirname(__file__), "..", ".streamlit", "secrets.toml")
 
 
-def missing_data_notice(filename, fetch_script):
-    st.warning(
-        f"**Data not found:** `{filename}`\n\n"
-        f"Run `python scripts/{fetch_script}` first to populate this section."
+def get_fred_api_key():
+    """Check the environment variable first, then fall back to secrets.toml."""
+    key = os.environ.get("FRED_API_KEY")
+    if key:
+        return key
+
+    if os.path.exists(SECRETS_PATH):
+        try:
+            import tomllib  # built into Python 3.11+
+        except ImportError:
+            print("NOTE: Can't read secrets.toml on Python < 3.11 (tomllib not available).")
+            print("Either upgrade Python, or set FRED_API_KEY as an environment variable instead.")
+            return None
+        with open(SECRETS_PATH, "rb") as f:
+            secrets = tomllib.load(f)
+        return secrets.get("FRED_API_KEY")
+
+    return None
+
+
+def main():
+    api_key = get_fred_api_key()
+    if not api_key:
+        print("ERROR: FRED_API_KEY not found in the environment or .streamlit/secrets.toml.")
+        print('  Option A: export FRED_API_KEY="your_key_here"')
+        print('  Option B: add FRED_API_KEY = "your_key_here" to .streamlit/secrets.toml')
+        print("Get a free key at: https://fred.stlouisfed.org/docs/api/api_key.html")
+        sys.exit(1)
+
+    fred = Fred(api_key=api_key)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    all_frames = []
+    for label, series_id in SERIES.items():
+        print(f"Fetching {label} ({series_id})...")
+        try:
+            s = fred.get_series(series_id)
+            df = s.reset_index()
+            df.columns = ["date", "value"]
+            df["series"] = label
+            df["series_id"] = series_id
+            all_frames.append(df)
+        except Exception as e:
+            print(f"  WARNING: failed to fetch {series_id}: {e}")
+
+    if not all_frames:
+        print("No data fetched. Exiting.")
+        sys.exit(1)
+
+    combined = pd.concat(all_frames, ignore_index=True)
+    out_path = os.path.join(OUTPUT_DIR, "fred_indicators.csv")
+    combined.to_csv(out_path, index=False)
+    print(f"\nSaved {len(combined)} rows to {out_path}")
+
+    # Also save a "latest value per series" summary — handy for headline stats
+    latest = (
+        combined.sort_values("date")
+        .groupby(["series", "series_id"])
+        .tail(1)
+        .reset_index(drop=True)
     )
+    latest_path = os.path.join(OUTPUT_DIR, "fred_latest.csv")
+    latest.to_csv(latest_path, index=False)
+    print(f"Saved latest snapshot to {latest_path}")
 
 
-# ---------- Header ----------
-
-st.title("\U0001F4B3 US Credit Card Market Dashboard")
-st.caption(
-    "A market research view of the US credit card industry, built entirely on "
-    "public sources: Federal Reserve (FRED), SEC EDGAR filings, and issuers' "
-    "own published rate/fee/rewards pages. No vendor or licensed data used."
-)
-
-tab_macro, tab_issuers, tab_products, tab_about = st.tabs(
-    ["\U0001F4C8 Macro & Market Overview", "\U0001F3E6 Issuer Financials", "\U0001F4B3 Product Comparison", "\u2139\uFE0F Methodology"]
-)
-
-# ---------- Tab 1: Macro & Market Overview ----------
-with tab_macro:
-    st.subheader("Macroeconomic & Consumer Credit Indicators")
-    st.caption("Source: FRED (Federal Reserve Economic Data)")
-
-    fred_df = load_csv("fred_indicators.csv")
-
-    if fred_df is None:
-        missing_data_notice("fred_indicators.csv", "fetch_fred_data.py")
-    else:
-        series_labels = {
-            "real_gdp": "Real GDP ($B)",
-            "unemployment_rate": "Unemployment Rate (%)",
-            "revolving_consumer_credit": "Revolving Consumer Credit ($B) — mostly credit card debt",
-            "credit_card_delinquency_rate": "Credit Card Delinquency Rate (%)",
-            "credit_card_interest_rate_all_accounts": "Avg. Credit Card APR — All Accounts (%)",
-            "credit_card_interest_rate_accounts_assessed_interest": "Avg. Credit Card APR — Accounts Charged Interest (%)",
-            "real_median_household_income": "Real Median Household Income ($)",
-        }
-
-        col1, col2 = st.columns(2)
-        cols_cycle = [col1, col2]
-        for i, (series_key, label) in enumerate(series_labels.items()):
-            subset = fred_df[fred_df["series"] == series_key].sort_values("date")
-            if subset.empty:
-                continue
-            with cols_cycle[i % 2]:
-                fig = px.line(subset, x="date", y="value", title=label)
-                fig.update_layout(height=320, margin=dict(l=10, r=10, t=40, b=10))
-                st.plotly_chart(fig, use_container_width=True)
-
-        st.caption(
-            "**Why two APR numbers?** 'All Accounts' averages in everyone, including "
-            "people who pay their balance in full and are never charged interest. "
-            "'Accounts Charged Interest' only counts people actually carrying a "
-            "balance — a more accurate picture of what debt actually costs. "
-            "Both come from the Fed's G.19 Consumer Credit report."
-        )
-
-        latest_df = load_csv("fred_latest.csv")
-        if latest_df is not None:
-            with st.expander("Latest values (raw)"):
-                st.dataframe(latest_df, use_container_width=True)
-
-# ---------- Tab 2: Issuer Financials ----------
-with tab_issuers:
-    st.subheader("Issuer Financial Comparison")
-    st.caption("Source: SEC EDGAR — figures as reported in each issuer's own 10-K/10-Q filings")
-
-    sec_df = load_csv("sec_issuer_financials.csv")
-
-    if sec_df is None:
-        missing_data_notice("sec_issuer_financials.csv", "fetch_sec_data.py")
-    else:
-        metric_labels = {
-            "total_assets": "Total Assets ($)",
-            "net_income": "Net Income ($)",
-            "total_revenue": "Total Revenue ($)",
-            "stockholders_equity": "Stockholders' Equity ($)",
-        }
-        metric_choice = st.selectbox("Metric", list(metric_labels.keys()), format_func=lambda k: metric_labels[k])
-
-        subset = sec_df[sec_df["metric"] == metric_choice].copy()
-        subset["period_end"] = pd.to_datetime(subset["period_end"])
-        subset = subset.sort_values("period_end")
-
-        fig = px.line(
-            subset, x="period_end", y="value", color="issuer",
-            title=metric_labels[metric_choice],
-        )
-        fig.update_layout(height=450)
-        st.plotly_chart(fig, use_container_width=True)
-
-        with st.expander("Latest reported values (raw)"):
-            latest = load_csv("sec_latest.csv")
-            if latest is not None:
-                st.dataframe(latest, use_container_width=True)
-
-# ---------- Tab 3: Product Comparison ----------
-with tab_products:
-    st.subheader("Card Product Comparison")
-    st.caption(
-        "Compiled manually from each issuer's own public rewards/rates page. "
-        "Refresh quarterly — issuer offers change frequently."
-    )
-
-    product_df = load_csv("card_product_comparison.csv")
-    if product_df is None:
-        st.info(
-            "This section isn't populated yet. Unlike the macro and issuer-financial "
-            "tabs, there's no public API for card rewards/APR data — it needs to be "
-            "manually compiled from each issuer's own website "
-            "(Chase, Amex, Citi, Bank of America, Capital One, Wells Fargo, Discover) "
-            "into `data/card_product_comparison.csv`. A template is provided in the repo."
-        )
-    elif "category" not in product_df.columns:
-        # Older flat-list format (no category column) - just show as-is
-        st.dataframe(product_df, use_container_width=True)
-    else:
-        all_categories = sorted(product_df["category"].unique().tolist())
-        all_issuers = sorted(product_df["issuer"].unique().tolist())
-
-        filter_col1, filter_col2 = st.columns(2)
-        with filter_col1:
-            selected_categories = st.multiselect(
-                "Card category",
-                options=all_categories,
-                default=all_categories,  # nothing excluded until the user narrows it
-            )
-        with filter_col2:
-            selected_issuers = st.multiselect(
-                "Bank / issuer",
-                options=all_issuers,
-                default=all_issuers,
-            )
-
-        # If someone clears a filter entirely, treat that as "show everything"
-        # rather than showing zero rows - avoids a confusing blank table.
-        active_categories = selected_categories if selected_categories else all_categories
-        active_issuers = selected_issuers if selected_issuers else all_issuers
-
-        filtered_df = product_df[
-            product_df["category"].isin(active_categories)
-            & product_df["issuer"].isin(active_issuers)
-        ]
-
-        st.caption(f"Showing {len(filtered_df)} of {len(product_df)} cards")
-        st.dataframe(filtered_df, use_container_width=True, hide_index=True)
-
-# ---------- Tab 4: Methodology ----------
-with tab_about:
-    st.subheader("Methodology & Sources")
-    st.markdown(
-        """
-This dashboard is built **entirely on public data** — no vendor, licensed, or
-proprietary sources are used.
-
-**Data sources:**
-- **FRED (Federal Reserve Economic Data)** — GDP, unemployment, consumer credit
-  outstanding, credit card delinquency rates, average APR. Free public API.
-- **SEC EDGAR** — issuer financials (assets, net income, revenue, equity) pulled
-  directly from each company's own 10-K/10-Q filings via SEC's public XBRL API.
-- **CFPB Consumer Credit Card Market Report** — periodic (biennial) report on
-  consumer credit card behavior and demographics. Manually reviewed on release.
-- **Issuer websites** — card rewards, APR, and fee data compiled manually from
-  each issuer's own published, public rate pages.
-
-**Refresh cadence:**
-- Macro & issuer financials: re-run the fetch scripts anytime for current data
-  (FRED updates daily/monthly depending on series; SEC filings update quarterly).
-- Consumer survey and product comparison data: reviewed and updated manually,
-  since these aren't available via API and don't change as frequently.
-
-**Limitations:**
-- Card product data reflects a point-in-time manual compilation, not a live feed.
-- Some issuer financial concepts (e.g. "Revenue") are tagged differently across
-  companies in their own XBRL filings; this dashboard picks the closest available
-  concept and notes it, rather than forcing an artificial apples-to-apples number.
-        """
-    )
+if __name__ == "__main__":
+    main()

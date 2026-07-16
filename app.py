@@ -42,6 +42,44 @@ st.caption(
     "own published rate/fee/rewards pages. No vendor or licensed data used."
 )
 
+# ---------- Headline KPI cards (main page, before the tabs) ----------
+
+latest_df = load_csv("fred_latest.csv")
+
+if latest_df is None:
+    st.info(
+        "Run `python scripts/fetch_fred_data.py` to populate the headline "
+        "market snapshot above the tabs."
+    )
+else:
+    # Turn the latest-value table into a simple lookup: series name -> value
+    latest_lookup = dict(zip(latest_df["series"], latest_df["value"]))
+    latest_dates = dict(zip(latest_df["series"], latest_df["date"]))
+
+    kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
+
+    with kpi_col1:
+        val = latest_lookup.get("unemployment_rate")
+        st.metric("Unemployment Rate", f"{val:.1f}%" if val is not None else "N/A")
+
+    with kpi_col2:
+        val = latest_lookup.get("credit_card_utilization_rate")
+        st.metric("Median Credit Card Utilization", f"{val:.1f}%" if val is not None else "N/A")
+
+    with kpi_col3:
+        val = latest_lookup.get("credit_card_delinquency_rate")
+        st.metric("Credit Card Delinquency Rate", f"{val:.2f}%" if val is not None else "N/A")
+
+    with kpi_col4:
+        val = latest_lookup.get("revolving_consumer_credit")
+        st.metric("Revolving Consumer Credit", f"${val:,.0f}B" if val is not None else "N/A")
+
+    as_of = latest_dates.get("credit_card_utilization_rate", "")
+    if as_of:
+        st.caption(f"Snapshot as of most recent FRED release for each series (utilization data through {as_of}). See the Macro tab for trends over time.")
+
+    st.divider()
+
 tab_macro, tab_issuers, tab_products, tab_about = st.tabs(
     ["\U0001F4C8 Macro & Market Overview", "\U0001F3E6 Issuer Financials", "\U0001F4B3 Product Comparison", "\u2139\uFE0F Methodology"]
 )
@@ -61,7 +99,7 @@ with tab_macro:
             "unemployment_rate": "Unemployment Rate (%)",
             "revolving_consumer_credit": "Revolving Consumer Credit ($B) — mostly credit card debt",
             "credit_card_delinquency_rate": "Credit Card Delinquency Rate (%)",
-            "credit_card_interest_rate": "Avg. Credit Card Interest Rate (%)",
+            "credit_card_utilization_rate": "Median Credit Card Utilization Rate (%)",
             "real_median_household_income": "Real Median Household Income ($)",
         }
 
@@ -75,6 +113,13 @@ with tab_macro:
                 fig = px.line(subset, x="date", y="value", title=label)
                 fig.update_layout(height=320, margin=dict(l=10, r=10, t=40, b=10))
                 st.plotly_chart(fig, use_container_width=True)
+
+        st.caption(
+            "**Credit card utilization rate** is the median share of an account's "
+            "available credit line that's actually being used, among active accounts "
+            "at large banks. Higher utilization is generally a warning sign for "
+            "consumer financial stress. Source: Federal Reserve Bank of Philadelphia."
+        )
 
         latest_df = load_csv("fred_latest.csv")
         if latest_df is not None:
