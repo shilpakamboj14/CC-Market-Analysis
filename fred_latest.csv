@@ -1,9 +1,0 @@
-date,value,series,series_id
-2024-01-01,83730.0,real_median_household_income,MEHOINUSA672N
-2026-01-01,24180.419,real_gdp,GDPC1
-2026-01-01,2.92,credit_card_delinquency_rate,DRCCLACBS
-2026-05-01,20.94,credit_card_interest_rate,TERMCBCCALLNS
-2026-05-01,1344207.79,revolving_consumer_credit,REVOLSL
-2026-05-01,3.0,personal_savings_rate,PSAVERT
-2026-06-01,4.2,unemployment_rate,UNRATE
-2026-06-01,332.568,cpi,CPIAUCSL
