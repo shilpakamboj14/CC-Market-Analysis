@@ -193,8 +193,8 @@ with tab_products:
             )
         with filter_col2:
                st.markdown(
-               "<p style='color:#003366; font-weight:bold; margin-bottom:0;'>Bank / issuer</p>",
-               unsafe_allow_html=True,
+                   "<p style='color:#003366; font-weight:bold; margin-bottom:0;'>Bank / issuer</p>",
+                   unsafe_allow_html=True,
         )
 
     selected_issuers = st.multiselect(
