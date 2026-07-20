@@ -182,20 +182,22 @@ with tab_products:
         st.dataframe(product_df, use_container_width=True)
     else:
         all_categories = sorted(product_df["category"].unique().tolist())
-        all_issuers = sorted(product_df["issuer"].unique().tolist())
+all_issuers = sorted(product_df["issuer"].unique().tolist())
 
-        filter_col1, filter_col2 = st.columns(2)
-        with filter_col1:
-            selected_categories = st.multiselect(
-                "Card category",
-                options=all_categories,
-                default=all_categories,  # nothing excluded until the user narrows it
-            )
-        with filter_col2:
-               st.markdown(
-                   "<p style='color:#003366; font-weight:bold; margin-bottom:0;'>Bank / issuer</p>",
-                   unsafe_allow_html=True,
-        )
+filter_col1, filter_col2 = st.columns(2)
+
+with filter_col1:
+    selected_categories = st.multiselect(
+        "Card category",
+        options=all_categories,
+        default=all_categories,
+    )
+
+with filter_col2:
+    st.markdown(
+        "<p style='color:#003366; font-weight:bold; margin-bottom:0;'>Bank / issuer</p>",
+        unsafe_allow_html=True,
+    )
 
     selected_issuers = st.multiselect(
         label="",
@@ -204,18 +206,17 @@ with tab_products:
         label_visibility="collapsed",
     )
 
-    # If someone clears a filter entirely, treat that as "show everything"
+# If someone clears a filter entirely, treat that as "show everything"
 active_categories = selected_categories if selected_categories else all_categories
 active_issuers = selected_issuers if selected_issuers else all_issuers
 
-        filtered_df = product_df[
-            product_df["category"].isin(active_categories)
-            & product_df["issuer"].isin(active_issuers)
-        ]
+filtered_df = product_df[
+    product_df["category"].isin(active_categories)
+    & product_df["issuer"].isin(active_issuers)
+]
 
-        st.caption(f"Showing {len(filtered_df)} of {len(product_df)} cards")
-        st.dataframe(filtered_df, use_container_width=True, hide_index=True)
-
+st.caption(f"Showing {len(filtered_df)} of {len(product_df)} cards")
+st.dataframe(filtered_df, use_container_width=True, hide_index=True)
 # ---------- Tab 4: Methodology ----------
 with tab_about:
     st.subheader("Methodology & Sources")
