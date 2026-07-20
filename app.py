@@ -204,10 +204,9 @@ with tab_products:
         label_visibility="collapsed",
     )
 
-        # If someone clears a filter entirely, treat that as "show everything"
-        # rather than showing zero rows - avoids a confusing blank table.
-        active_categories = selected_categories if selected_categories else all_categories
-        active_issuers = selected_issuers if selected_issuers else all_issuers
+    # If someone clears a filter entirely, treat that as "show everything"
+active_categories = selected_categories if selected_categories else all_categories
+active_issuers = selected_issuers if selected_issuers else all_issuers
 
         filtered_df = product_df[
             product_df["category"].isin(active_categories)
