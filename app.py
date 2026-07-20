@@ -192,11 +192,17 @@ with tab_products:
                 default=all_categories,  # nothing excluded until the user narrows it
             )
         with filter_col2:
-            selected_issuers = st.multiselect(
-                "Bank / issuer",
-                options=all_issuers,
-                default=all_issuers,
-            )
+               st.markdown(
+               "<p style='color:#003366; font-weight:bold; margin-bottom:0;'>Bank / issuer</p>",
+               unsafe_allow_html=True,
+        )
+
+    selected_issuers = st.multiselect(
+        label="",
+        options=all_issuers,
+        default=all_issuers,
+        label_visibility="collapsed",
+    )
 
         # If someone clears a filter entirely, treat that as "show everything"
         # rather than showing zero rows - avoids a confusing blank table.
