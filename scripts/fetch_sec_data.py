@@ -25,8 +25,8 @@ BANKS = {
 METRICS = {
     "total_assets": ["Assets"],
     "net_income": ["NetIncomeLoss"],
-    "total_revenue": ["Revenues", "RevenuesNetOfInterestExpense"],
-    "stockholders_equity": ["StockholdersEquity"],
+    "total_revenue": ["Revenues", "RevenuesNetOfInterestExpense", "InterestAndDividendIncomeOperating"],
+    "stockholders_equity": ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"],
 }
 
 DATA_FOLDER = os.path.join(os.path.dirname(__file__), "..", "data")
